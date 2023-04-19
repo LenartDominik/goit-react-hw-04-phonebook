@@ -2,10 +2,13 @@ import PropTypes from 'prop-types';
 import css from './ContactList.module.css';
 
 export const ContactList = ({ contacts, deleteContact, filter }) => {
-  console.log('contact list', contacts);
-  const filteredContacts = contacts.filter(contact => {
-    return contact.name.toLowerCase().includes(filter);
-  });
+  const filteredContacts = contacts.filter(contact =>
+    contact.name.toLowerCase().includes(filter)
+  );
+
+  const handleDelete = id => {
+    deleteContact(id);
+  };
 
   return (
     <ul className={css.items}>
@@ -19,7 +22,7 @@ export const ContactList = ({ contacts, deleteContact, filter }) => {
             <b>Number: </b>
             {contact.number}
           </p>
-          <button id={contact.id} onClick={deleteContact}>
+          <button id={contact.id} onClick={() => handleDelete(contact.id)}>
             Delete
           </button>
         </li>
@@ -33,3 +36,4 @@ ContactList.propTypes = {
   deleteContact: PropTypes.func,
   filter: PropTypes.string,
 };
+
