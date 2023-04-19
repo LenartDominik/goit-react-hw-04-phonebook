@@ -1,73 +1,37 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { Notify } from 'notiflix';
 
-import ContactList from './ContactList/ContactList';
-import ContactForm from './ContactForm/ContactForm';
-import Filter from './Filter/Filter';
+import { ContactList } from './ContactList/ContactList';
+import { AddContact } from './ContactForm/ContactForm';
+import { Filter } from './Filter/Filter';
 import css from './App.module.css';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
 
-  componentDidMount() {
-    const loadedContacts = this.load('contacts');
-
-    if (loadedContacts) {
-      this.setState({
-        contacts: loadedContacts,
-      });
+  useEffect(() => {
+    const parsedContacts = JSON.parse(localStorage.getItem('contacts'));
+    if (parsedContacts) {
+      setContacts(parsedContacts);
     }
-    console.log('%c Component did mount', 'background-color: lavender ');
-  }
+  }, []);
 
-  componentDidUpdate(prevState) {
-    if (
-      this.state.contacts !== prevState.contacts &&
-      this.state.contacts !== []
-    ) {
-      this.save('contacts', this.state.contacts);
-      console.log('%c component did update', 'background-color: lightpink');
-    }
-    return;
-  }
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-  save = (key, value) => {
-    try {
-      const serializedState = JSON.stringify(value);
-      localStorage.setItem(key, serializedState);
-    } catch (error) {
-      console.error('Set state error: ', error.message);
-    }
-  };
-
-  load = key => {
-    try {
-      const serializedState = localStorage.getItem(key);
-      return serializedState === null ? undefined : JSON.parse(serializedState);
-    } catch (error) {
-      console.error('Get state error: ', error.message);
-    }
-  };
-
-  handleSubmit = e => {
+  const handleSubmit = e => {
     e.preventDefault();
-
     const form = e.currentTarget;
     const name = form.elements.name.value;
     const number = form.elements.number.value;
-    const id = nanoid();
-
     const newContact = {
-      id: id,
+      id: nanoid(),
       name: name,
       number: number,
     };
-
-    const { contacts } = this.state;
 
     if (
       contacts.find(
@@ -81,52 +45,35 @@ export class App extends Component {
       );
     } else {
       Notify.success(`Contact ${name} successfully added`);
-      this.setState(prev => ({
-        contacts: [...prev.contacts, newContact],
-      }));
-
+      setContacts([...contacts, newContact]);
       form.reset();
     }
   };
 
-  deleteContact = e => {
-    e.preventDefault();
-
-    const contactsNew = [...this.state.contacts];
-    const index = contactsNew.findIndex(contact => contact.id === e.target.id);
-
-    contactsNew.splice(index, 1);
-
-    this.setState({ contacts: contactsNew });
+  const deleteContact = id => {
+    setContacts(contacts.filter(contact => contact.id !== id));
     Notify.info('Contact Successfully Deleted');
   };
 
-  findContact = e => {
-    const { contacts, filter } = this.state;
-    this.setState({ filter: e.target.value.toLowerCase() });
-    contacts.filter(contact => {
-      return contact.name.toLowerCase().includes(filter.toLowerCase());
-    });
+  const findContact = e => {
+    setFilter(e.target.value.toLowerCase().trim());
   };
 
-  render() {
-    const { filter, contacts } = this.state;
-    return (
-      <div className={css.container}>
-        <h1> Phonebook</h1>
-        <ContactForm handleSubmit={this.handleSubmit} />
+  return (
+    <div className={css.container}>
+      <h1> Phonebook</h1>
+      <AddContact handleSubmit={handleSubmit} />
 
-        <h2> Contacts </h2>
-        {contacts.length > 1 && <Filter findContact={this.findContact} />}
-        {contacts.length > 0 && (
-          <ContactList
-            contacts={contacts}
-            deleteContact={this.deleteContact}
-            filter={filter}
-          />
-        )}
-        {contacts.length === 0 && <p>Your contact list is empty</p>}
-      </div>
-    );
-  }
-}
+      <h2> Contacts </h2>
+      {contacts.length > 1 && <Filter findContact={findContact} />}
+      {contacts.length > 0 && (
+        <ContactList
+          contacts={contacts}
+          deleteContact={deleteContact}
+          filter={filter}
+        />
+      )}
+      {contacts.length === 0 && <p>Your contact list is empty</p>}
+    </div>
+  );
+};
